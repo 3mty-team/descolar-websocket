@@ -1,0 +1,19 @@
+{
+  "name": "descolar/descolar-websocket",
+  "description": "Websocket Server for Descolar App",
+  "type": "project",
+  "authors": [
+    {
+      "name": "Descolar Team",
+      "email": "contact@descolar.fr"
+    }
+  ],
+  "require": {
+    "cboden/ratchet": "v0.5.x-dev"
+  },
+  "autoload": {
+    "psr-4": {
+      "DescolarSocket\\": "App/"
+    }
+  }
+}
