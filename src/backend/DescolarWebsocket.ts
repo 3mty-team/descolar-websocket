@@ -25,7 +25,7 @@ export class DescolarWebsocket {
                 logger: process.env.NODE_ENV === "development"
             })
                 .register(require('@fastify/websocket'))
-                .register(require('@fastify/cors'), (instance) => {
+                .register(require('@fastify/cors'), () => {
                     return (req, callback) => {
                         const corsOptions = {
                             // This is NOT recommended for production as it enables reflection exploits
@@ -55,7 +55,7 @@ export class DescolarWebsocket {
     }
 
     public async start() {
-        const port = process.env.SERVER_PORT ?? '3000';
+        const port = process.env.SERVER_PORT ?? '8000';
 
         this.getServer()
             .listen({

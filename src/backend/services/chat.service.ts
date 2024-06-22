@@ -1,13 +1,13 @@
 import {WebSocket} from "@fastify/websocket";
 import ClientNotFoundException from "../Exceptions/ClientNotFoundException";
-import {ChatRegister, ChatSend} from "../Types/Chat/chat.types";
-import ClientAlreadyExistsException from "../Exceptions/ClientAlreadyExistsException";
+import {ChatRegister, ChatSend, ChatSendMessageRequest} from "../Types/Chat/chat.types";
 import DataNotFormattedWellException from "../Exceptions/DataNotFormattedWellException";
 
 
 export default class ChatService {
 
     private static readonly clientList: { userUUID: string, socket: WebSocket }[] = []
+    private static readonly cache: { userUUID: string, messages: ChatSendMessageRequest[] }[] = []
 
     public registerClient(data: ChatRegister|null, socket: WebSocket) {
 
@@ -15,13 +15,17 @@ export default class ChatService {
             throw new DataNotFormattedWellException();
         }
 
-        const client = ChatService.clientList.find((client) => client.userUUID === data.userUUID)
+        const {userUUID} = data
+
+        const client = ChatService.clientList.find((client) => client.userUUID === userUUID)
 
         if (client) {
-            throw new ClientAlreadyExistsException();
+            ChatService.clientList.splice(ChatService.clientList.indexOf(client), 1)
         }
 
-        ChatService.clientList.push({userUUID: data.userUUID, socket: socket})
+        ChatService.clientList.push({userUUID: userUUID, socket: socket})
+
+        this.useCache(userUUID)
     }
 
     public sendClient(data: ChatSend|null) {
@@ -39,7 +43,8 @@ export default class ChatService {
         const dataToSend = {
             "toUUID": data.toUUID,
             "fromUUID": data.fromUUID,
-            "message": data.message
+            "message": data.message,
+            "iat":  Date.now().toString(),
         }
 
         this.send(data.toUUID, dataToSend)
@@ -53,12 +58,34 @@ export default class ChatService {
         this.sendComponent(socket, message)
     }
 
-    public send(userUUID: string, message: object) {
+    private sendToCache(message: ChatSendMessageRequest) {
+        const cache = ChatService.cache.find((cache) => cache.userUUID === message.toUUID)
+
+        if (!cache) {
+            ChatService.cache.push({userUUID: message.toUUID, messages: [message]})
+        } else {
+            cache.messages.push(message)
+        }
+    }
+
+    private useCache(userUUID: string) {
+        const cache = ChatService.cache.find((cache) => cache.userUUID === userUUID)
+
+        if (cache) {
+            cache.messages.forEach((message) => {
+                this.send(userUUID, message)
+            })
+
+            ChatService.cache.splice(ChatService.cache.indexOf(cache), 1)
+        }
+    }
+
+    public send(userUUID: string, message: ChatSendMessageRequest) {
 
         const client = ChatService.clientList.find((client) => client.userUUID === userUUID)
 
         if (!client) {
-            throw new ClientNotFoundException()
+            this.sendToCache(message)
         }
 
         client.socket.send(JSON.stringify(message));

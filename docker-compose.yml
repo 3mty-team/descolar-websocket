@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  descolar-websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: descolar/websocket
+    container_name: descolar-websocket
+    networks:
+      - descolar_internal_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wss.rule=Host(`websocket.descolar.fr`)"
+      - "traefik.http.routers.wss.entrypoints=websocket"
+
+networks:
+  descolar_internal_network:
+    external: true

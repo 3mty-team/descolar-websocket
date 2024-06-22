@@ -13,6 +13,7 @@ export type ChatSendMessageRequest = {
     "fromUUID": string,
     "toUUID": string,
     "message": string,
+    "iat": string,
 }
 
 
