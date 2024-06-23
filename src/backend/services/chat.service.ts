@@ -25,6 +25,8 @@ export default class ChatService {
 
         ChatService.clientList.push({userUUID: userUUID, socket: socket})
 
+        this.sendWithSocket(socket, {"response": "User registered with UUID: " + userUUID})
+
         this.useCache(userUUID)
     }
 
@@ -47,6 +49,7 @@ export default class ChatService {
             "iat":  Date.now().toString(),
         }
 
+        this.send(data.fromUUID, dataToSend)
         this.send(data.toUUID, dataToSend)
     }
 
