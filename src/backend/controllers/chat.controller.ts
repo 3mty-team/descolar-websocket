@@ -1,8 +1,7 @@
 import {WebSocket} from "@fastify/websocket";
 import {FastifyRequest} from "fastify";
-import {ChatRegister, ChatRequest, ChatSend} from "../Types/Chat/chat.types";
+import {ChatRegister, ChatRemove, ChatRequest, ChatSend} from "../Types/Chat/chat.types";
 import ChatService from "../services/chat.service";
-import ClientAlreadyExistsException from "../Exceptions/ClientAlreadyExistsException";
 import DataNotFormattedWellException from "../Exceptions/DataNotFormattedWellException";
 
 export default class ChatController {
@@ -34,6 +33,25 @@ export default class ChatController {
 
     private initController() {
         this.socket.on("message", (msg: Buffer | ArrayBuffer | Buffer[]) => this.onMessage(msg))
+        this.socket.on("close", () => this.service.closeClient(this.socket))
+    }
+
+    private removeClient(msg: ChatRequest) {
+
+        let message = msg as ChatRemove
+
+        if (message?.userUUID === undefined) {
+            message = null;
+        }
+
+        try {
+            this.service.removeClient(message, this.socket);
+        } catch (error) {
+            if (error instanceof DataNotFormattedWellException) {
+                this.service.sendError(this.socket, error.message)
+                return
+            }
+        }
     }
 
     private registerMethod(msg: ChatRequest) {
@@ -47,7 +65,7 @@ export default class ChatController {
         try {
             this.service.registerClient(message, this.socket);
         } catch (error) {
-            if (error instanceof ClientAlreadyExistsException || error instanceof DataNotFormattedWellException) {
+            if (error instanceof DataNotFormattedWellException) {
                 this.service.sendError(this.socket, error.message)
                 return
             }
@@ -65,7 +83,7 @@ export default class ChatController {
         try {
             this.service.sendClient(message);
         } catch (error) {
-            if (error instanceof ClientAlreadyExistsException || error instanceof DataNotFormattedWellException) {
+            if (error instanceof DataNotFormattedWellException) {
                 this.service.sendError(this.socket, error.message)
                 return
             }
@@ -83,6 +101,9 @@ export default class ChatController {
                     break;
                 case "send":
                     this.sendMethod(message)
+                    break;
+                case "remove":
+                    this.removeClient(this.socket)
                     break;
                 default:
                     throw new DataNotFormattedWellException();

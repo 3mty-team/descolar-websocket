@@ -1,5 +1,5 @@
 
-export type Methods = "register" | "send";
+export type Methods = "register" | "send" | "remove";
 
 export type ChatRequestMethod = {
     "method": Methods
@@ -13,7 +13,10 @@ export type ChatSendMessageRequest = {
     "fromUUID": string,
     "toUUID": string,
     "message": string,
-    "iat": string,
+}
+
+export type ChatRemoveRequest = {
+    "userUUID": string
 }
 
 
@@ -25,3 +28,4 @@ export type ChatResponse = {
 export type ChatRequest = ChatRequestMethod & (ChatRegisterRequest | ChatSendMessageRequest);
 export type ChatRegister = ChatRequestMethod & ChatRegisterRequest;
 export type ChatSend = ChatRequestMethod & ChatSendMessageRequest;
+export type ChatRemove = ChatRequestMethod & ChatRemoveRequest;

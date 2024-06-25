@@ -1,6 +1,6 @@
 import {WebSocket} from "@fastify/websocket";
 import ClientNotFoundException from "../Exceptions/ClientNotFoundException";
-import {ChatRegister, ChatSend, ChatSendMessageRequest} from "../Types/Chat/chat.types";
+import {ChatRegister, ChatRemove, ChatSend, ChatSendMessageRequest} from "../Types/Chat/chat.types";
 import DataNotFormattedWellException from "../Exceptions/DataNotFormattedWellException";
 
 
@@ -9,9 +9,9 @@ export default class ChatService {
     private static readonly clientList: { userUUID: string, socket: WebSocket }[] = []
     private static readonly cache: { userUUID: string, messages: ChatSendMessageRequest[] }[] = []
 
-    public registerClient(data: ChatRegister|null, socket: WebSocket) {
+    public registerClient(data: ChatRegister | null, socket: WebSocket) {
 
-        if(!data) {
+        if (!data) {
             throw new DataNotFormattedWellException();
         }
 
@@ -30,9 +30,9 @@ export default class ChatService {
         this.useCache(userUUID)
     }
 
-    public sendClient(data: ChatSend|null) {
+    public sendClient(data: ChatSend | null) {
 
-        if(!data) {
+        if (!data) {
             throw new DataNotFormattedWellException();
         }
 
@@ -46,11 +46,41 @@ export default class ChatService {
             "toUUID": data.toUUID,
             "fromUUID": data.fromUUID,
             "message": data.message,
-            "iat":  Date.now().toString(),
+            "iat": Date.now().toString(),
         }
 
         this.send(data.fromUUID, dataToSend)
         this.send(data.toUUID, dataToSend)
+    }
+
+    public removeClient(data: ChatRemove | null, socket: WebSocket) {
+        if (!data) {
+            throw new DataNotFormattedWellException();
+        }
+
+        const {userUUID} = data
+
+        const client = ChatService.clientList.find((client) => client.userUUID === userUUID && client.socket === socket)
+
+        if (client) {
+            this.remove(client)
+        }
+
+        console.log(`Client ${client?.userUUID ?? "NOT_FOUNDED"} removed`)
+    }
+
+    public closeClient(socket: WebSocket) {
+        const client = ChatService.clientList.find((client) => client.socket === socket)
+
+        if (client) {
+            this.remove(client)
+        }
+
+        console.log(`Client ${client?.userUUID ?? "NOT_FOUNDED"} removed`)
+    }
+
+    private remove(client: { userUUID: string, socket: WebSocket }) {
+        ChatService.clientList.splice(ChatService.clientList.indexOf(client), 1)
     }
 
     private sendComponent(socket: WebSocket, message: object) {
